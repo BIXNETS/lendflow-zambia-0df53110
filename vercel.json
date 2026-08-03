@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "vite build",
-  "outputDirectory": ".output",
+  "outputDirectory": ".vercel/output",
   "framework": null,
   "installCommand": "npm install",
   "regions": ["iad1"],
@@ -27,3 +27,4 @@
     }
   ]
 }
+
