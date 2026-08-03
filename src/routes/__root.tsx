@@ -1,4 +1,4 @@
-import { Outlet, HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { Outlet, HeadContent, Scripts, Link, createRootRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import "../styles.css";
 
@@ -18,7 +18,23 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
+  notFoundComponent: NotFound,
 });
+
+function NotFound() {
+  return (
+    <RootDocument>
+      <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-[color:var(--color-leaf-dark)]">Error 404</p>
+        <h1 className="text-3xl font-black tracking-tight">We couldn&apos;t find that page</h1>
+        <p className="text-sm text-[color:var(--color-muted)]">
+          The link may be out of date. Head back to the homepage to continue.
+        </p>
+        <Link to="/" className="btn-primary rounded-full px-6 py-3 text-sm font-bold">Back to home</Link>
+      </main>
+    </RootDocument>
+  );
+}
 
 function RootComponent() {
   return (

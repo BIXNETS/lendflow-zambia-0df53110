@@ -29,7 +29,7 @@ export const getMyOverview = createServerFn({ method: "GET" })
 
 export const saveKycDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({
       docType: z.enum(["id_front", "id_back", "selfie"]),
       storagePath: z.string().min(3).max(400),
@@ -114,7 +114,7 @@ export const saveKycDocument = createServerFn({ method: "POST" })
 
 export const submitApplication = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({
       firstName: z.string().min(1).max(80),
       lastName: z.string().min(1).max(80),
@@ -213,7 +213,7 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
 
 export const repayLoan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ loanId: z.string().uuid(), amount: z.number().positive().max(100_000_000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -258,7 +258,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
 
 export const reviewKycDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({
       docId: z.string().uuid(),
       status: z.enum(["approved", "rejected"]),
@@ -301,7 +301,7 @@ export const reviewKycDocument = createServerFn({ method: "POST" })
 
 export const decideApplication = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({
       applicationId: z.string().uuid(),
       decision: z.enum(["approved", "declined"]),
@@ -394,7 +394,7 @@ export const decideApplication = createServerFn({ method: "POST" })
 
 export const disburseLoan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ loanId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ loanId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (!isAdmin) throw new Error("Forbidden");
@@ -404,7 +404,7 @@ export const disburseLoan = createServerFn({ method: "POST" })
 
 export const adminRecordRepayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ loanId: z.string().uuid(), amount: z.number().positive().max(100_000_000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
