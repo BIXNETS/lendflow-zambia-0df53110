@@ -8,9 +8,6 @@
   "env": {
     "DEPLOY_TARGET": "vercel"
   },
-  "rewrites": [
-    { "source": "/api/public/(.*)", "destination": "/api/public/$1" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -27,4 +24,5 @@
     }
   ]
 }
+
 
