@@ -76,7 +76,7 @@ function getResponse() {
 }
 var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 async function getStartManifest(matchedRoutes) {
-  const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-0i-3PwZn.js");
+  const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-CJpuboKw.js");
   const startManifest = tsrStartManifest();
   let routes = startManifest.routes;
   routes[rootRouteId];
