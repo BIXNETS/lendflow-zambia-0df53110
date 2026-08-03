@@ -18,5 +18,18 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },
-  plugins: [tailwindcss(), tanstackStart(), ...(useNitro ? [nitro()] : []), react()],
+  plugins: [
+    tailwindcss(),
+    tanstackStart(),
+    ...(useNitro
+      ? [
+          nitro({
+            preset: "vercel",
+            // Vercel serves the SSR entry point from .output/server/index.mjs
+            // and static assets from .output/public.
+          }),
+        ]
+      : []),
+    react(),
+  ],
 });
