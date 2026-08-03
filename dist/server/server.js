@@ -76,7 +76,7 @@ function getResponse() {
 }
 var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 async function getStartManifest(matchedRoutes) {
-  const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-B9LYoaXu.js");
+  const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-0i-3PwZn.js");
   const startManifest = tsrStartManifest();
   let routes = startManifest.routes;
   routes[rootRouteId];
@@ -98,59 +98,59 @@ async function getStartManifest(matchedRoutes) {
 const manifest = {
   "1610f5c3c742803af9a7beee010bb1bb9a296d240d6666f7bcdd4c9a8ba49a42": {
     functionName: "grantAdminByEmail_createServerFn_handler",
-    importer: () => import("./assets/roles.functions-C080QUDC.js")
+    importer: () => import("./assets/roles.functions-B3lvfvTt.js")
   },
   "26f66c727a20beb926090e5f296bd76c459acb1817bd06a9fbc58ac17ce39621": {
     functionName: "markNotificationsRead_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "40eaedf16b61a51373c117df29a15f5f65b3b9c82e5650b9b3e7348299a56dac": {
     functionName: "saveKycDocument_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "4604561a92bea487cc5879f60ae42e12cfcf41feaf127f0dfdb704c248901dea": {
     functionName: "disburseLoan_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "5707a8ca9e5b8c17feb2f45051f5408a4f289fe7c7cf407ced2e47add458b3e8": {
     functionName: "getAdminOverview_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "7e9e1e8d2fc604a3c0d5229870fff0c8b906a127ce9b294361362350223fa6a8": {
     functionName: "repayLoan_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "973e58cbb43fedd94c0c3a00b7143d462fc369c8a2dca91fd86246abb445c31c": {
     functionName: "reviewKycDocument_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "a10cb981358284df097f3f2ae98652f64510978dc6622f8d48a972efdcbddfe9": {
     functionName: "getMyRoles_createServerFn_handler",
-    importer: () => import("./assets/roles.functions-C080QUDC.js")
+    importer: () => import("./assets/roles.functions-B3lvfvTt.js")
   },
   "a605870b28b0840006a9ca8e04eaa20ae34468b6889057f5578b077dab9006df": {
     functionName: "getMyOverview_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "aa97e5af1c66b8062b75b520c19ad13ed33824731c9a49519f6968b5fa63e027": {
     functionName: "submitApplication_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "ab016b598b2f75c8ce0a45149f7656046641e874016907f171d2642ec68f8c55": {
     functionName: "decideApplication_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "b1d685438bef229a12e8a5c38e6fb1d0b6b0179365594bc5c9710be54dd5c5a8": {
     functionName: "setUserRole_createServerFn_handler",
-    importer: () => import("./assets/roles.functions-C080QUDC.js")
+    importer: () => import("./assets/roles.functions-B3lvfvTt.js")
   },
   "c53af2bfe57a2a2839844d83e737c99575284885304aa960e134d3790dfc9a6d": {
     functionName: "adminRecordRepayment_createServerFn_handler",
-    importer: () => import("./assets/lending.functions-BOtvKzjn.js")
+    importer: () => import("./assets/lending.functions-BLG8zSdg.js")
   },
   "e2eaf696f134851f6a231c1d6bf9a9110f64b0988ce565a7badba0583805f437": {
     functionName: "listTeam_createServerFn_handler",
-    importer: () => import("./assets/roles.functions-C080QUDC.js")
+    importer: () => import("./assets/roles.functions-B3lvfvTt.js")
   }
 };
 async function getServerFnById(id, access) {
@@ -1391,7 +1391,7 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
   const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-    import("./assets/router-D_Y4TMN3.js").then((n) => n.r),
+    import("./assets/router-BuaJHGu6.js").then((n) => n.r),
     import("./assets/start-B2VK6Lld.js"),
     import("./assets/empty-plugin-adapters-BFgPZ6_d.js")
   ]);
