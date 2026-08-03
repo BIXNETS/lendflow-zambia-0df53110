@@ -1,4 +1,8 @@
-#  LendFlow Zambia
+# LendFlow Zambia
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_GITHUB_USERNAME%2FYOUR_REPO_NAME&env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,SUPABASE_SERVICE_ROLE_KEY,MOMO_WEBHOOK_SECRET&project-name=lendflow-zambia)
+
+> Replace `YOUR_GITHUB_USERNAME/YOUR_REPO_NAME` in the link above with your actual GitHub repository after syncing from Lovable. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full guide.
 
 # Build LendFlow Zambia – Mobile Money Loan Platform
 

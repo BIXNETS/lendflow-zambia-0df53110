@@ -1,17 +1,20 @@
 # Deploying to Vercel
 
-This app is a TanStack Start (SSR) app. Vercel builds it through Nitro, which is
-enabled automatically when `VERCEL=1` is present (or locally via
-`DEPLOY_TARGET=vercel`). The default build used elsewhere is unchanged.
+This app is a TanStack Start (SSR) app. Vercel builds it through Nitro, which is enabled automatically when `VERCEL=1` is present (or locally via `DEPLOY_TARGET=vercel`). The default build used elsewhere is unchanged.
 
-## 1. Import the repo
+## Quick deploy (one click)
 
-In Vercel: **Add New → Project → Import** this repository. Leave the framework
-preset on auto-detect (TanStack Start / Nitro). No `vercel.json` is required.
+1. Sync this project to GitHub from the Lovable editor: **Plus (+) menu → GitHub → Connect project**.
+2. Replace `YOUR_GITHUB_USERNAME/YOUR_REPO_NAME` in the README deploy button with your actual repository path.
+3. Click the **Deploy with Vercel** button in README.md and fill in the environment variables when prompted.
 
-- Build command: `vite build`
+## Manual import
+
+In Vercel: **Add New → Project → Import** this repository. Leave the framework preset on auto-detect (TanStack Start / Nitro). The `vercel.json` at the project root supplies the build settings.
+
+- Build command: `vite build` (set automatically by `vercel.json`)
 - Output: `.output` (produced by Nitro, detected automatically)
-- Install command: default
+- Install command: default (`npm install`)
 
 ## 2. Environment variables
 
