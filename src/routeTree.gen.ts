@@ -19,6 +19,7 @@ import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as KycRouteImport } from './routes/kyc'
 import { Route as LoansRouteImport } from './routes/loans'
 import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminTeamRouteImport } from './routes/admin.team'
 import { Route as ApiPublicMomoWebhookRouteImport } from './routes/api/public/momo/webhook'
 
@@ -72,6 +73,11 @@ const ManagerRoute = ManagerRouteImport.update({
   path: '/manager',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminTeamRoute = AdminTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/kyc': typeof KycRoute
   '/loans': typeof LoansRoute
   '/manager': typeof ManagerRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/team': typeof AdminTeamRoute
   '/api/public/momo/webhook': typeof ApiPublicMomoWebhookRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/kyc': typeof KycRoute
   '/loans': typeof LoansRoute
   '/manager': typeof ManagerRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/team': typeof AdminTeamRoute
   '/api/public/momo/webhook': typeof ApiPublicMomoWebhookRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/kyc': typeof KycRoute
   '/loans': typeof LoansRoute
   '/manager': typeof ManagerRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/team': typeof AdminTeamRoute
   '/api/public/momo/webhook': typeof ApiPublicMomoWebhookRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/kyc'
     | '/loans'
     | '/manager'
+    | '/reset-password'
     | '/admin/team'
     | '/api/public/momo/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/kyc'
     | '/loans'
     | '/manager'
+    | '/reset-password'
     | '/admin/team'
     | '/api/public/momo/webhook'
   id:
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/kyc'
     | '/loans'
     | '/manager'
+    | '/reset-password'
     | '/admin/team'
     | '/api/public/momo/webhook'
   fileRoutesById: FileRoutesById
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   KycRoute: typeof KycRoute
   LoansRoute: typeof LoansRoute
   ManagerRoute: typeof ManagerRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicMomoWebhookRoute: typeof ApiPublicMomoWebhookRoute
 }
 
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/team': {
       id: '/admin/team'
       path: '/team'
@@ -295,6 +315,7 @@ const rootRouteChildren: RootRouteChildren = {
   KycRoute: KycRoute,
   LoansRoute: LoansRoute,
   ManagerRoute: ManagerRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicMomoWebhookRoute: ApiPublicMomoWebhookRoute,
 }
 export const routeTree = rootRouteImport

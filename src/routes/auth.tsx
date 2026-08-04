@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Brand } from "@/components/Brand";
-import { signInAccount, signUpAccount, useAccount } from "@/lib/session";
+import { requestPasswordReset, signInAccount, signUpAccount, useAccount } from "@/lib/session";
 import { inputCls } from "@/components/Wizard";
 import { cn } from "@/lib/utils";
 import { Clock, Lock, ShieldCheck } from "lucide-react";
@@ -45,6 +45,7 @@ function AuthPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const go = (role: string) => navigate({ to: role === "manager" ? "/manager" : "/dashboard" });
 
@@ -86,6 +87,24 @@ function AuthPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const sendResetLink = async () => {
+    setError("");
+    setNotice("");
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+      setError("Enter your email address above, then request a reset link.");
+      return;
+    }
+    setResetting(true);
+    const result = await requestPasswordReset(cleanEmail);
+    setResetting(false);
+    if (!result.ok) {
+      setError(friendly(result.error));
+      return;
+    }
+    setNotice("If an account exists for that email, a password-reset link has been sent. Check your inbox and spam folder.");
   };
 
 
@@ -138,6 +157,18 @@ function AuthPage() {
             <Labelled label="Password">
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputCls()} placeholder="••••••••" />
             </Labelled>
+            {mode === "signin" && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={sendResetLink}
+                  disabled={resetting}
+                  className="text-sm font-bold text-[color:var(--color-leaf-dark)] hover:underline disabled:opacity-60"
+                >
+                  {resetting ? "Sending…" : "Forgot password?"}
+                </button>
+              </div>
+            )}
             {error && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">{error}</p>}
             {notice && <p role="status" className="rounded-xl bg-[color:var(--color-mint)] px-3 py-2 text-sm font-semibold text-[color:var(--color-leaf-dark)]">{notice}</p>}
             <button type="submit" disabled={busy} className="btn-primary w-full rounded-full px-6 py-3 text-sm font-bold disabled:opacity-60">
