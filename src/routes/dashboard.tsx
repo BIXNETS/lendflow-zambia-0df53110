@@ -52,14 +52,19 @@ function ClientDashboard() {
   const wizardOpen = search.apply === true;
 
   const refresh = useCallback(async () => {
-    const d = await overview({});
-    setData({
-      kycStatus: d.kycStatus ?? "pending",
-      applications: d.applications as Row[],
-      loans: d.loans as Row[],
-      transactions: d.transactions as Row[],
-      notifications: d.notifications as Row[],
-    });
+    try {
+      const d = await overview({});
+      setData({
+        kycStatus: d.kycStatus ?? "pending",
+        applications: d.applications as Row[],
+        loans: d.loans as Row[],
+        transactions: d.transactions as Row[],
+        notifications: d.notifications as Row[],
+      });
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load your dashboard.");
+    }
   }, [overview]);
 
   // Opening/closing the wizard only ever changes the dashboard's search params —
@@ -114,11 +119,24 @@ function ClientDashboard() {
 
 
   // Never blank out into a redirect-looking state while the session/data loads.
-  if (loading || (account?.role === "client" && !data)) {
+  if (loading || (account?.role === "client" && !data && !error)) {
     return (
       <div data-testid="dashboard-loading" className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">
         Loading your dashboard…
       </div>
+    );
+  }
+  if (account?.role === "client" && !data && error) {
+    return (
+      <AppShell user={account} subtitle="Borrower account">
+        <div role="alert" className="card mx-auto max-w-xl p-8 text-center">
+          <h1 className="text-2xl font-black">Dashboard unavailable</h1>
+          <p className="mt-2 text-sm text-[color:var(--color-muted)]">{error}</p>
+          <button type="button" onClick={() => void refresh()} className="btn-primary mt-5 rounded-full px-6 py-3 text-sm font-bold">
+            Try again
+          </button>
+        </div>
+      </AppShell>
     );
   }
   if (!account || account.role !== "client" || !data) return null;
