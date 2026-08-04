@@ -242,7 +242,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       supabase.from("loans").select("*").order("created_at", { ascending: false }),
       supabase.from("payment_transactions").select("*").order("occurred_at", { ascending: false }).limit(200),
       supabase.from("kyc_documents").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id,first_name,last_name,phone,kyc_status"),
+      supabase.from("profiles").select("id,first_name,last_name,phone,national_id,date_of_birth,gender,province,city,address,kyc_status,activation_status"),
       supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(30),
     ]);
 
@@ -296,6 +296,57 @@ export const reviewKycDocument = createServerFn({ method: "POST" })
         },
       ]);
     }
+    return { ok: true };
+  });
+
+export const reviewBorrowerKyc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z.object({
+      borrowerId: z.string().uuid(),
+      status: z.enum(["approved", "rejected"]),
+      notes: z.string().max(500).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { data: documents, error: readError } = await supabase
+      .from("kyc_documents")
+      .select("id,doc_type")
+      .eq("user_id", data.borrowerId);
+    if (readError) throw new Error(readError.message);
+    if (!documents?.length) throw new Error("This borrower has not uploaded any identity documents.");
+
+    const required = new Set(["id_front", "id_back", "selfie"]);
+    const uploaded = new Set(documents.map(document => document.doc_type));
+    const missing = [...required].filter(type => !uploaded.has(type));
+    if (data.status === "approved" && missing.length > 0) {
+      throw new Error(`Cannot validate KYC. Missing: ${missing.map(type => type.replace(/_/g, " ")).join(", ")}.`);
+    }
+
+    const { error } = await supabase
+      .from("kyc_documents")
+      .update({
+        status: data.status,
+        review_notes: data.notes ?? null,
+        reviewed_by: userId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("user_id", data.borrowerId);
+    if (error) throw new Error(error.message);
+
+    const { notify } = await import("@/lib/lending.server");
+    await notify([{
+      user_id: data.borrowerId,
+      kind: "kyc",
+      title: data.status === "approved" ? "Identity verified" : "Identity verification rejected",
+      body: data.status === "approved"
+        ? "Your identity information and documents were validated. You can now apply for a loan."
+        : `Your identity verification was rejected. ${data.notes ?? "Please review and re-upload your documents."}`,
+    }]);
     return { ok: true };
   });
 

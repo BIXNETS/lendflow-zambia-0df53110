@@ -7,7 +7,7 @@ import { money } from "@/lib/demo-auth";
 import { useAccount } from "@/lib/session";
 import { ProtectedRouteFallback } from "@/components/ProtectedRouteFallback";
 import {
-  getAdminOverview, decideApplication, disburseLoan, adminRecordRepayment, reviewKycDocument,
+  getAdminOverview, decideApplication, disburseLoan, adminRecordRepayment, reviewBorrowerKyc,
 } from "@/lib/lending.functions";
 
 export const Route = createFileRoute("/manager")({
@@ -33,7 +33,7 @@ function ManagerConsole() {
   const decide = useServerFn(decideApplication);
   const disburse = useServerFn(disburseLoan);
   const repay = useServerFn(adminRecordRepayment);
-  const reviewDoc = useServerFn(reviewKycDocument);
+  const reviewKyc = useServerFn(reviewBorrowerKyc);
 
   const [data, setData] = useState<null | {
     applications: Row[]; loans: Row[]; transactions: Row[]; documents: Row[]; profiles: Row[]; notifications: Row[];
@@ -91,11 +91,14 @@ function ManagerConsole() {
   const book = data.loans.reduce((s, l) => s + Number(l.principal), 0);
   const collected = data.transactions.filter(t => t.tx_type === "repayment" && t.status === "succeeded")
     .reduce((s, t) => s + Number(t.amount), 0);
-  const pendingDocs = data.documents.filter(d => d.status === "pending").length;
+  const kycUsers = data.profiles
+    .map(profile => ({ profile, documents: data.documents.filter(document => document.user_id === profile.id) }))
+    .filter(record => record.documents.length > 0);
+  const pendingKyc = kycUsers.filter(record => record.profile.kyc_status !== "approved").length;
 
   const TABS = [
     ["applications", `Applications (${pending})`],
-    ["kyc", `Identity (${pendingDocs})`],
+    ["kyc", `Identity (${pendingKyc})`],
     ["loans", `Loans (${data.loans.length})`],
     ["ledger", "Ledger"],
   ] as const;
@@ -108,7 +111,7 @@ function ManagerConsole() {
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard label="Awaiting decision" value={String(pending)} tone="sun" />
-          <KpiCard label="Documents to verify" value={String(pendingDocs)} tone="sky" />
+          <KpiCard label="People to verify" value={String(pendingKyc)} tone="sky" />
           <KpiCard label="Loan book" value={money(book)} />
           <KpiCard label="Repayments collected" value={money(collected)} tone="sky" />
         </div>
@@ -188,33 +191,56 @@ function ManagerConsole() {
 
         {tab === "kyc" && (
           <div className="mt-4 card overflow-hidden" data-testid="kyc-panel">
-            {data.documents.length === 0 ? (
+            {kycUsers.length === 0 ? (
               <p className="px-6 py-10 text-center text-sm text-[color:var(--color-muted)]">No documents uploaded yet.</p>
             ) : (
               <div className="divide-y divide-[color:var(--color-line)]">
-                {data.documents.map(d => {
-                  const p = data.profiles.find(x => x.id === d.user_id);
+                {kycUsers.map(({ profile, documents }) => {
+                  const allApproved = profile.kyc_status === "approved";
+                  const isRejected = documents.some(document => document.status === "rejected");
+                  const key = `kyc-${profile.id}`;
                   return (
-                    <div key={d.id} data-testid="admin-kyc-doc" data-status={d.status} className="flex flex-wrap items-center gap-3 px-6 py-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 font-bold capitalize">
-                          {d.doc_type.replace(/_/g, " ")} <StatusPill status={d.status} />
+                    <article key={profile.id} data-testid="admin-kyc-user" data-status={profile.kyc_status} className="px-6 py-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="font-black">{`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || "Borrower"}</h2>
+                            <StatusPill status={profile.kyc_status} />
+                          </div>
+                          <p className="mt-1 text-xs text-[color:var(--color-muted)]">{profile.phone || "No phone number"} · ID {profile.national_id || "not provided"}</p>
                         </div>
-                        <div className="mt-1 text-xs text-[color:var(--color-muted)]">
-                          {p ? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || d.user_id : d.user_id} · {d.storage_path}
+                        <div className="flex flex-wrap gap-2">
+                          {!allApproved && (
+                            <button data-testid="approve-doc" disabled={busy === key}
+                              onClick={() => run(key, () => reviewKyc({ data: { borrowerId: profile.id, status: "approved" } }))}
+                              className="btn-primary rounded-full px-4 py-2 text-xs font-bold disabled:opacity-40">
+                              {busy === key ? "Validating…" : "Validate KYC"}
+                            </button>
+                          )}
+                          {!isRejected && (
+                            <button data-testid="reject-doc" disabled={busy === key}
+                              onClick={() => run(key, () => reviewKyc({ data: { borrowerId: profile.id, status: "rejected", notes: "Identity details or documents could not be validated. Please re-upload clear copies." } }))}
+                              className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 disabled:opacity-40">Reject KYC</button>
+                          )}
                         </div>
                       </div>
-                      {d.status !== "approved" && (
-                        <button data-testid="approve-doc" disabled={busy === d.id}
-                          onClick={() => run(d.id, () => reviewDoc({ data: { docId: d.id, status: "approved" } }))}
-                          className="btn-primary rounded-full px-4 py-2 text-xs font-bold disabled:opacity-40">Verify</button>
-                      )}
-                      {d.status !== "rejected" && (
-                        <button data-testid="reject-doc" disabled={busy === d.id}
-                          onClick={() => run(d.id, () => reviewDoc({ data: { docId: d.id, status: "rejected", notes: "Document unreadable — please re-upload." } }))}
-                          className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 disabled:opacity-40">Reject</button>
-                      )}
-                    </div>
+                      <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                        <div><dt className="font-bold text-[color:var(--color-muted)]">Date of birth</dt><dd className="mt-1">{profile.date_of_birth || "Not provided"}</dd></div>
+                        <div><dt className="font-bold text-[color:var(--color-muted)]">Gender</dt><dd className="mt-1 capitalize">{profile.gender || "Not provided"}</dd></div>
+                        <div><dt className="font-bold text-[color:var(--color-muted)]">Location</dt><dd className="mt-1">{[profile.city, profile.province].filter(Boolean).join(", ") || "Not provided"}</dd></div>
+                        <div><dt className="font-bold text-[color:var(--color-muted)]">Address</dt><dd className="mt-1">{profile.address || "Not provided"}</dd></div>
+                      </dl>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                        {documents.map(document => (
+                          <div key={document.id} className="rounded-lg border border-[color:var(--color-line)] bg-[color:var(--color-sky)] p-3">
+                            <div className="flex items-center justify-between gap-2 text-xs font-bold capitalize">
+                              {document.doc_type.replace(/_/g, " ")} <StatusPill status={document.status} />
+                            </div>
+                            <p className="mt-2 truncate text-[11px] text-[color:var(--color-muted)]" title={document.storage_path}>{document.storage_path}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
                   );
                 })}
               </div>
