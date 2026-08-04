@@ -7,14 +7,16 @@ export type SignResult = { ok: true; account: Account } | { ok: false; error: st
 
 /** Make sure a profile row exists for the signed-in user (no auth-schema trigger available). */
 async function ensureProfile(userId: string, meta: Record<string, string>) {
-  const { data: existing } = await supabase.from("profiles").select("id").eq("id", userId).maybeSingle();
+  const { data: existing, error: readError } = await supabase.from("profiles").select("id").eq("id", userId).maybeSingle();
+  if (readError) throw new Error("Could not load your profile.");
   if (existing) return;
-  await supabase.from("profiles").insert({
+  const { error: insertError } = await supabase.from("profiles").insert({
     id: userId,
     first_name: meta.first_name ?? null,
     last_name: meta.last_name ?? null,
     phone: meta.phone ?? null,
   });
+  if (insertError) throw new Error("Could not initialize your profile.");
 }
 
 async function accountFromSession(): Promise<Account | null> {
@@ -24,10 +26,12 @@ async function accountFromSession(): Promise<Account | null> {
 
   await ensureProfile(user.id, (user.user_metadata ?? {}) as Record<string, string>);
 
-  const [{ data: profile }, { data: roles }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
     supabase.from("profiles").select("first_name,last_name,phone").eq("id", user.id).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", user.id),
   ]);
+  if (profileError) throw new Error("Could not load your profile.");
+  if (rolesError) throw new Error("Could not determine your account access.");
 
 
   const isAdmin = (roles ?? []).some(r => r.role === "admin");
@@ -105,18 +109,22 @@ export async function getAccount(): Promise<Account | null> {
 /** Client-side hook: null while loading, then the signed-in account or false. */
 export function useAccount() {
   const [account, setAccount] = useState<Account | null | undefined>(undefined);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let alive = true;
-    getAccount().then(a => alive && setAccount(a));
+    const load = () => getAccount()
+      .then(a => { if (alive) { setAccount(a); setError(""); } })
+      .catch(cause => { if (alive) { setAccount(null); setError(cause instanceof Error ? cause.message : "Could not load your account."); } });
+    void load();
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      getAccount().then(a => alive && setAccount(a));
+      void load();
     });
     return () => { alive = false; data.subscription.unsubscribe(); };
   }, []);
 
-  return { account, loading: account === undefined };
+  return { account, loading: account === undefined, error };
 }
 
 /**

@@ -39,11 +39,19 @@ function KycPage() {
   const [kyc, setKyc] = useState("pending");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(async () => {
-    const data = await overview({});
-    setDocs(data.documents as DocRow[]);
-    setKyc(data.kycStatus ?? "pending");
+    try {
+      const data = await overview({});
+      setDocs(data.documents as DocRow[]);
+      setKyc(data.kycStatus ?? "pending");
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load identity verification.");
+    } finally {
+      setLoaded(true);
+    }
   }, [overview]);
 
   useEffect(() => {
@@ -52,7 +60,10 @@ function KycPage() {
     void refresh();
   }, [loading, account, navigate, refresh]);
 
-  if (!account) return null;
+  if (loading || (account && !loaded)) {
+    return <div className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">Loading identity verification…</div>;
+  }
+  if (!account) return <div className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">Redirecting to sign in…</div>;
 
   const upload = async (docType: (typeof DOCS)[number]["type"], file: File) => {
     setError("");
