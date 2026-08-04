@@ -44,8 +44,13 @@ function ManagerConsole() {
   const [tab, setTab] = useState<"applications" | "kyc" | "loans" | "ledger">("applications");
 
   const refresh = useCallback(async () => {
-    const d = await overview({});
-    setData(d as any);
+    try {
+      const d = await overview({});
+      setData(d as any);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load the manager console.");
+    }
   }, [overview]);
 
   useEffect(() => {
@@ -55,6 +60,20 @@ function ManagerConsole() {
     void refresh();
   }, [loading, account, navigate, refresh]);
 
+  if (loading || (account?.role === "manager" && !data && !error)) {
+    return <div className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">Loading the manager console…</div>;
+  }
+  if (account?.role === "manager" && !data && error) {
+    return (
+      <AppShell user={account} subtitle="Manager · back office">
+        <div role="alert" className="card mx-auto max-w-xl p-8 text-center">
+          <h1 className="text-2xl font-black">Manager console unavailable</h1>
+          <p className="mt-2 text-sm text-[color:var(--color-muted)]">{error}</p>
+          <button type="button" onClick={() => void refresh()} className="btn-primary mt-5 rounded-full px-6 py-3 text-sm font-bold">Try again</button>
+        </div>
+      </AppShell>
+    );
+  }
   if (!account || account.role !== "manager" || !data) return null;
 
   const run = async (key: string, fn: () => Promise<unknown>) => {
