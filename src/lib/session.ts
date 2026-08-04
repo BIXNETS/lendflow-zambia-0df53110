@@ -113,15 +113,50 @@ export function useAccount() {
 
   useEffect(() => {
     let alive = true;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
     const load = () => getAccount()
       .then(a => { if (alive) { setAccount(a); setError(""); } })
       .catch(cause => { if (alive) { setAccount(null); setError(cause instanceof Error ? cause.message : "Could not load your account."); } });
     void load();
+    const scheduleRefresh = async () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      const { data } = await supabase.auth.getSession();
+      const expiresAt = data.session?.expires_at;
+      if (!expiresAt || !alive) return;
+      const delay = Math.max(expiresAt * 1000 - Date.now() - 60_000, 5_000);
+      refreshTimer = setTimeout(async () => {
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (!alive) return;
+        if (refreshError) {
+          setAccount(null);
+          setError("Your session expired. Please sign in again.");
+          return;
+        }
+        void load();
+        void scheduleRefresh();
+      }, delay);
+    };
+    void scheduleRefresh();
     const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED") {
+        void scheduleRefresh();
+        void load();
+        return;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       void load();
+      void scheduleRefresh();
     });
-    return () => { alive = false; data.subscription.unsubscribe(); };
+    const restore = () => { if (document.visibilityState === "visible") { void load(); void scheduleRefresh(); } };
+    window.addEventListener("online", restore);
+    document.addEventListener("visibilitychange", restore);
+    return () => {
+      alive = false;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      data.subscription.unsubscribe();
+      window.removeEventListener("online", restore);
+      document.removeEventListener("visibilitychange", restore);
+    };
   }, []);
 
   return { account, loading: account === undefined, error };
