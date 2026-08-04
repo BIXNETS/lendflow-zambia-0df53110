@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader, ShieldCheck, Upload, XCircle } from "lucide-react";
@@ -32,7 +32,6 @@ const DOCS = [
 type DocRow = { id: string; doc_type: string; status: string; review_notes: string | null };
 
 function KycPage() {
-  const navigate = useNavigate();
   const { account, loading, error: sessionError } = useAccount();
   const overview = useServerFn(getMyOverview);
   const save = useServerFn(saveKycDocument);
@@ -56,10 +55,9 @@ function KycPage() {
   }, [overview]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!account) { navigate({ to: "/auth" }); return; }
+    if (loading || sessionError || !account || account.role !== "client") return;
     void refresh();
-  }, [loading, account, navigate, refresh]);
+  }, [loading, sessionError, account, refresh]);
 
   if (loading || sessionError || !account || account.role !== "client") {
     return <ProtectedRouteFallback account={account} loading={loading} error={sessionError} expectedRole="client">{() => <></>}</ProtectedRouteFallback>;

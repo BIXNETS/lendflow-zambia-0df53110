@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, ShieldCheck } from "lucide-react";
@@ -28,7 +28,6 @@ export const Route = createFileRoute("/manager")({
 type Row = Record<string, any>;
 
 function ManagerConsole() {
-  const navigate = useNavigate();
   const { account, loading, error: sessionError } = useAccount();
   const overview = useServerFn(getAdminOverview);
   const decide = useServerFn(decideApplication);
@@ -55,11 +54,9 @@ function ManagerConsole() {
   }, [overview]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!account) { navigate({ to: "/auth" }); return; }
-    if (account.role !== "manager") { navigate({ to: "/dashboard" }); return; }
+    if (loading || sessionError || !account || account.role !== "manager") return;
     void refresh();
-  }, [loading, account, navigate, refresh]);
+  }, [loading, sessionError, account, refresh]);
 
   if (loading || sessionError || !account || account.role !== "manager") {
     return <ProtectedRouteFallback account={account} loading={loading} error={sessionError} expectedRole="manager">{() => <></>}</ProtectedRouteFallback>;
