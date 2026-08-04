@@ -69,46 +69,7 @@ export const saveKycDocument = createServerFn({ method: "POST" })
       })),
     );
 
-    // Automated first-pass verification: once all three required documents are on
-    // file, the backend acknowledges verification immediately so the borrower can
-    // apply. A manager can still reject any document later from the console.
-    const { data: allDocs } = await supabase
-      .from("kyc_documents")
-      .select("id, doc_type, status")
-      .eq("user_id", userId);
-
-    const rows = allDocs ?? [];
-    const types = new Set(rows.map(r => r.doc_type));
-    const anyRejected = rows.some(r => r.status === "rejected");
-    let verified = false;
-
-    if (types.size === 3 && !anyRejected) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin
-        .from("kyc_documents")
-        .update({ status: "approved", review_notes: "Auto-verified: document set complete.", reviewed_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .neq("status", "approved");
-      verified = true;
-
-      await notify([
-        {
-          user_id: userId,
-          kind: "kyc",
-          title: "Identity verified ✅",
-          body: "All three documents were received and verified. You can now apply for a loan.",
-        },
-        ...admins.map(id => ({
-          user_id: id,
-          audience: "admin",
-          kind: "kyc",
-          title: "Borrower auto-verified",
-          body: "A borrower completed their document set and was auto-verified. Review in the KYC tab if needed.",
-        })),
-      ]);
-    }
-
-    return { ok: true, verified };
+    return { ok: true, verified: false };
   });
 
 
