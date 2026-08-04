@@ -320,8 +320,8 @@ export const reviewBorrowerKyc = createServerFn({ method: "POST" })
     if (readError) throw new Error(readError.message);
     if (!documents?.length) throw new Error("This borrower has not uploaded any identity documents.");
 
-    const required = new Set(["id_front", "id_back", "selfie"]);
-    const uploaded = new Set(documents.map(document => document.doc_type));
+    const required = ["id_front", "id_back", "selfie"] as const;
+    const uploaded = new Set<string>(documents.map(document => document.doc_type));
     const missing = [...required].filter(type => !uploaded.has(type));
     if (data.status === "approved" && missing.length > 0) {
       throw new Error(`Cannot validate KYC. Missing: ${missing.map(type => type.replace(/_/g, " ")).join(", ")}.`);
