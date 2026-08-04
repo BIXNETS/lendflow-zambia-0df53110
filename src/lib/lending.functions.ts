@@ -69,46 +69,7 @@ export const saveKycDocument = createServerFn({ method: "POST" })
       })),
     );
 
-    // Automated first-pass verification: once all three required documents are on
-    // file, the backend acknowledges verification immediately so the borrower can
-    // apply. A manager can still reject any document later from the console.
-    const { data: allDocs } = await supabase
-      .from("kyc_documents")
-      .select("id, doc_type, status")
-      .eq("user_id", userId);
-
-    const rows = allDocs ?? [];
-    const types = new Set(rows.map(r => r.doc_type));
-    const anyRejected = rows.some(r => r.status === "rejected");
-    let verified = false;
-
-    if (types.size === 3 && !anyRejected) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin
-        .from("kyc_documents")
-        .update({ status: "approved", review_notes: "Auto-verified: document set complete.", reviewed_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .neq("status", "approved");
-      verified = true;
-
-      await notify([
-        {
-          user_id: userId,
-          kind: "kyc",
-          title: "Identity verified ✅",
-          body: "All three documents were received and verified. You can now apply for a loan.",
-        },
-        ...admins.map(id => ({
-          user_id: id,
-          audience: "admin",
-          kind: "kyc",
-          title: "Borrower auto-verified",
-          body: "A borrower completed their document set and was auto-verified. Review in the KYC tab if needed.",
-        })),
-      ]);
-    }
-
-    return { ok: true, verified };
+    return { ok: true, verified: false };
   });
 
 
@@ -242,7 +203,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       supabase.from("loans").select("*").order("created_at", { ascending: false }),
       supabase.from("payment_transactions").select("*").order("occurred_at", { ascending: false }).limit(200),
       supabase.from("kyc_documents").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id,first_name,last_name,phone,kyc_status"),
+      supabase.from("profiles").select("id,first_name,last_name,phone,national_id,date_of_birth,gender,province,city,address,kyc_status,activation_status"),
       supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(30),
     ]);
 
@@ -296,6 +257,57 @@ export const reviewKycDocument = createServerFn({ method: "POST" })
         },
       ]);
     }
+    return { ok: true };
+  });
+
+export const reviewBorrowerKyc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z.object({
+      borrowerId: z.string().uuid(),
+      status: z.enum(["approved", "rejected"]),
+      notes: z.string().max(500).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { data: documents, error: readError } = await supabase
+      .from("kyc_documents")
+      .select("id,doc_type")
+      .eq("user_id", data.borrowerId);
+    if (readError) throw new Error(readError.message);
+    if (!documents?.length) throw new Error("This borrower has not uploaded any identity documents.");
+
+    const required = ["id_front", "id_back", "selfie"] as const;
+    const uploaded = new Set<string>(documents.map(document => document.doc_type));
+    const missing = [...required].filter(type => !uploaded.has(type));
+    if (data.status === "approved" && missing.length > 0) {
+      throw new Error(`Cannot validate KYC. Missing: ${missing.map(type => type.replace(/_/g, " ")).join(", ")}.`);
+    }
+
+    const { error } = await supabase
+      .from("kyc_documents")
+      .update({
+        status: data.status,
+        review_notes: data.notes ?? null,
+        reviewed_by: userId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("user_id", data.borrowerId);
+    if (error) throw new Error(error.message);
+
+    const { notify } = await import("@/lib/lending.server");
+    await notify([{
+      user_id: data.borrowerId,
+      kind: "kyc",
+      title: data.status === "approved" ? "Identity verified" : "Identity verification rejected",
+      body: data.status === "approved"
+        ? "Your identity information and documents were validated. You can now apply for a loan."
+        : `Your identity verification was rejected. ${data.notes ?? "Please review and re-upload your documents."}`,
+    }]);
     return { ok: true };
   });
 
