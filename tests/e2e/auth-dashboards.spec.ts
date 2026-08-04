@@ -43,8 +43,8 @@ test("logs in as admin and loads manager data", async ({ page }) => {
   await expect(page.getByTestId("admin-notifications")).toBeVisible();
 });
 
-test("expired sessions show a recovery action instead of a blank page", async ({ page }) => {
+test("expired sessions redirect to authentication instead of a blank page", async ({ page }) => {
   await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Continue to your account" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Continue to onboarding" })).toBeVisible();
+  await expect(page).toHaveURL(/\/auth/);
+  await expect(page.locator("form")).toBeVisible();
 });
