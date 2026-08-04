@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, ShieldCheck } from "lucide-react";
 import { AppShell, KpiCard, StatusPill } from "@/components/AppShell";
 import { money } from "@/lib/demo-auth";
 import { useAccount } from "@/lib/session";
+import { ProtectedRouteFallback } from "@/components/ProtectedRouteFallback";
 import {
   getAdminOverview, decideApplication, disburseLoan, adminRecordRepayment, reviewKycDocument,
 } from "@/lib/lending.functions";
@@ -27,8 +28,7 @@ export const Route = createFileRoute("/manager")({
 type Row = Record<string, any>;
 
 function ManagerConsole() {
-  const navigate = useNavigate();
-  const { account, loading } = useAccount();
+  const { account, loading, error: sessionError } = useAccount();
   const overview = useServerFn(getAdminOverview);
   const decide = useServerFn(decideApplication);
   const disburse = useServerFn(disburseLoan);
@@ -54,13 +54,14 @@ function ManagerConsole() {
   }, [overview]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!account) { navigate({ to: "/auth" }); return; }
-    if (account.role !== "manager") { navigate({ to: "/dashboard" }); return; }
+    if (loading || sessionError || !account || account.role !== "manager") return;
     void refresh();
-  }, [loading, account, navigate, refresh]);
+  }, [loading, sessionError, account, refresh]);
 
-  if (loading || (account?.role === "manager" && !data && !error)) {
+  if (loading || sessionError || !account || account.role !== "manager") {
+    return <ProtectedRouteFallback account={account} loading={loading} error={sessionError} expectedRole="manager">{() => <></>}</ProtectedRouteFallback>;
+  }
+  if (!data && !error) {
     return <div className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">Loading the manager console…</div>;
   }
   if (account?.role === "manager" && !data && error) {
@@ -74,7 +75,7 @@ function ManagerConsole() {
       </AppShell>
     );
   }
-  if (!account || account.role !== "manager" || !data) return null;
+  if (!data) return <ProtectedRouteFallback account={account} loading={false} expectedRole="manager">{() => <></>}</ProtectedRouteFallback>;
 
   const run = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key); setError("");

@@ -9,6 +9,7 @@ import { Wizard } from "@/components/Wizard";
 import { DEFAULT_PRODUCT_ID, getProduct } from "@/lib/loan-products";
 import { getMyOverview, markNotificationsRead, repayLoan } from "@/lib/lending.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { ProtectedRouteFallback } from "@/components/ProtectedRouteFallback";
 
 
 type DashboardSearch = { apply?: boolean; product?: string };
@@ -38,7 +39,7 @@ type Row = Record<string, any>;
 function ClientDashboard() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const { account, loading } = useAccount();
+  const { account, loading, error: sessionError } = useAccount();
   const overview = useServerFn(getMyOverview);
   const repay = useServerFn(repayLoan);
   const readAll = useServerFn(markNotificationsRead);
@@ -118,8 +119,13 @@ function ClientDashboard() {
   }, [loading, account, refresh]);
 
 
-  // Never blank out into a redirect-looking state while the session/data loads.
-  if (loading || (account?.role === "client" && !data && !error)) {
+  const fallback = (
+    <ProtectedRouteFallback account={account} loading={loading} error={sessionError} expectedRole="client">
+      {() => <></>}
+    </ProtectedRouteFallback>
+  );
+  if (loading || sessionError || !account || account.role !== "client") return fallback;
+  if (!data && !error) {
     return (
       <div data-testid="dashboard-loading" className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">
         Loading your dashboard…
@@ -139,7 +145,7 @@ function ClientDashboard() {
       </AppShell>
     );
   }
-  if (!account || account.role !== "client" || !data) return null;
+  if (!data) return fallback;
 
 
   const outstanding = data.loans.reduce((s, l) => s + Number(l.outstanding_principal ?? 0), 0);

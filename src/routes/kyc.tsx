@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader, ShieldCheck, Upload, XCircle } from "lucide-react";
@@ -6,6 +6,7 @@ import { AppShell, StatusPill } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/lib/session";
 import { getMyOverview, saveKycDocument } from "@/lib/lending.functions";
+import { ProtectedRouteFallback } from "@/components/ProtectedRouteFallback";
 
 export const Route = createFileRoute("/kyc")({
   head: () => ({
@@ -31,8 +32,7 @@ const DOCS = [
 type DocRow = { id: string; doc_type: string; status: string; review_notes: string | null };
 
 function KycPage() {
-  const navigate = useNavigate();
-  const { account, loading } = useAccount();
+  const { account, loading, error: sessionError } = useAccount();
   const overview = useServerFn(getMyOverview);
   const save = useServerFn(saveKycDocument);
   const [docs, setDocs] = useState<DocRow[]>([]);
@@ -55,15 +55,16 @@ function KycPage() {
   }, [overview]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!account) { navigate({ to: "/auth" }); return; }
+    if (loading || sessionError || !account || account.role !== "client") return;
     void refresh();
-  }, [loading, account, navigate, refresh]);
+  }, [loading, sessionError, account, refresh]);
 
-  if (loading || (account && !loaded)) {
+  if (loading || sessionError || !account || account.role !== "client") {
+    return <ProtectedRouteFallback account={account} loading={loading} error={sessionError} expectedRole="client">{() => <></>}</ProtectedRouteFallback>;
+  }
+  if (!loaded) {
     return <div className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">Loading identity verification…</div>;
   }
-  if (!account) return <div className="grid min-h-[60vh] place-items-center p-10 text-sm font-semibold text-[color:var(--color-muted)]">Redirecting to sign in…</div>;
 
   const upload = async (docType: (typeof DOCS)[number]["type"], file: File) => {
     setError("");
